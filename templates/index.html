@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MeetMind AI</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+</head>
+
+
+<body>
+
+<!-- =========================================
+     SIDEBAR
+========================================= -->
+
+<aside class="sidebar">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            ✦
+        </div>
+
+        <div>
+            <div class="brand-name">
+                MeetMind
+            </div>
+
+            <div class="brand-subtitle">
+                AI Video Assistant
+            </div>
+        </div>
+
+    </div>
+
+
+    <nav>
+
+        <button
+            class="nav-btn active"
+            data-page="home"
+        >
+            <span>＋</span>
+            New Analysis
+        </button>
+
+
+        <button
+            class="nav-btn disabled-nav"
+            id="analysisNav"
+            data-page="analysis"
+        >
+            <span>◈</span>
+            Analysis
+        </button>
+
+
+        <button
+            class="nav-btn disabled-nav"
+            id="transcriptNav"
+            data-page="transcript"
+        >
+            <span>☷</span>
+            Transcript
+        </button>
+
+
+        <button
+            class="nav-btn disabled-nav"
+            id="chatNav"
+            data-page="chat"
+        >
+            <span>◌</span>
+            Chat with Video
+        </button>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <div class="status">
+
+            <span
+                class="status-dot"
+                id="statusDot"
+            ></span>
+
+            <span id="statusText">
+                Ready
+            </span>
+
+        </div>
+
+        <div class="tech-stack">
+            Whisper · Chroma · Mistral
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================
+     MAIN
+========================================= -->
+
+<main class="main">
+
+
+    <!-- HEADER -->
+
+    <header class="topbar">
+
+        <div>
+
+            <div class="breadcrumb">
+                AI Video Assistant
+            </div>
+
+            <div
+                class="current-title"
+                id="headerTitle"
+            >
+                New Analysis
+            </div>
+
+        </div>
+
+
+        <div
+            class="session-badge"
+            id="sessionBadge"
+        >
+            No session
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================
+         HOME
+    ====================================== -->
+
+    <section
+        class="page active"
+        id="homePage"
+    >
+
+        <div class="hero">
+
+            <div class="hero-icon">
+                ✦
+            </div>
+
+            <h1>
+                Understand any video
+                <span>instantly.</span>
+            </h1>
+
+            <p>
+                Upload a video or paste a YouTube link.
+                MeetMind will transcribe, summarize and
+                let you ask questions about the content.
+            </p>
+
+        </div>
+
+
+        <div class="input-card">
+
+
+            <!-- YouTube -->
+
+            <div class="input-section">
+
+                <label>
+                    YouTube URL
+                </label>
+
+                <div class="url-wrapper">
+
+                    <span class="input-icon">
+                        ▶
+                    </span>
+
+                    <input
+                        id="youtubeUrl"
+                        type="url"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="or-divider">
+                <span>OR</span>
+            </div>
+
+
+            <!-- Upload -->
+
+            <div
+                class="upload-box"
+                id="uploadBox"
+            >
+
+                <input
+                    type="file"
+                    id="fileInput"
+                    hidden
+                    accept=".mp4,.mp3,.wav,.m4a,.webm,.mkv,.avi,.mov"
+                >
+
+                <div class="upload-icon">
+                    ↑
+                </div>
+
+                <h3>
+                    Upload a video or audio file
+                </h3>
+
+                <p>
+                    Drag & drop or
+                    <button id="browseBtn">
+                        browse
+                    </button>
+                </p>
+
+                <small>
+                    MP4, MP3, WAV, M4A, WebM, MKV
+                </small>
+
+            </div>
+
+
+            <div
+                class="selected-file"
+                id="selectedFile"
+                hidden
+            >
+                <span>📄</span>
+                <span id="fileName"></span>
+                <button id="removeFile">
+                    ×
+                </button>
+            </div>
+
+
+            <!-- Language -->
+
+            <div class="language-section">
+
+                <label>
+                    Transcription language
+                </label>
+
+                <div class="language-buttons">
+
+                    <button
+                        class="language-btn active"
+                        data-language="english"
+                    >
+                        English
+                    </button>
+
+                    <button
+                        class="language-btn"
+                        data-language="hinglish"
+                    >
+                        Hinglish
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="primary-btn analyze-btn"
+                id="analyzeBtn"
+            >
+
+                <span>
+                    ✦
+                </span>
+
+                Analyze Video
+
+            </button>
+
+        </div>
+
+
+        <div class="feature-row">
+
+            <div>
+                <strong>Whisper / Sarvam</strong>
+                <span>Accurate transcription</span>
+            </div>
+
+            <div>
+                <strong>LLM Analysis</strong>
+                <span>Summary & insights</span>
+            </div>
+
+            <div>
+                <strong>RAG Chat</strong>
+                <span>Ask anything</span>
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         PROCESSING
+    ====================================== -->
+
+    <section
+        class="page"
+        id="processingPage"
+    >
+
+        <div class="processing">
+
+            <div class="loader"></div>
+
+            <h2>
+                Analyzing your video
+            </h2>
+
+            <p id="processingText">
+                Preparing your audio...
+            </p>
+
+
+            <div class="progress-container">
+
+                <div
+                    class="progress-bar"
+                    id="progressBar"
+                ></div>
+
+            </div>
+
+
+            <div class="processing-steps">
+
+                <div
+                    class="processing-step active"
+                    id="step1"
+                >
+                    <span>01</span>
+                    Processing audio
+                </div>
+
+                <div
+                    class="processing-step"
+                    id="step2"
+                >
+                    <span>02</span>
+                    Transcribing content
+                </div>
+
+                <div
+                    class="processing-step"
+                    id="step3"
+                >
+                    <span>03</span>
+                    Generating AI insights
+                </div>
+
+                <div
+                    class="processing-step"
+                    id="step4"
+                >
+                    <span>04</span>
+                    Building RAG knowledge base
+                </div>
+
+            </div>
+
+            <p class="processing-note">
+                This may take a few minutes for long videos.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         ANALYSIS
+    ====================================== -->
+
+    <section
+        class="page"
+        id="analysisPage"
+    >
+
+        <div class="page-heading">
+
+            <div>
+
+                <span class="eyebrow">
+                    VIDEO ANALYSIS
+                </span>
+
+                <h1 id="videoTitle">
+                    Meeting Analysis
+                </h1>
+
+            </div>
+
+            <span class="completed">
+                ● Completed
+            </span>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <span>AI Summary</span>
+                <strong>Generated</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Action Items</span>
+                <strong id="actionCount">—</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Decisions</span>
+                <strong id="decisionCount">—</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Open Questions</span>
+                <strong id="questionCount">—</strong>
+            </div>
+
+        </div>
+
+
+        <div class="content-grid">
+
+
+            <!-- Summary -->
+
+            <div class="content-card summary-card">
+
+                <div class="card-heading">
+
+                    <div class="card-icon purple">
+                        ✦
+                    </div>
+
+                    <h3>
+                        Executive Summary
+                    </h3>
+
+                </div>
+
+                <div
+                    class="summary-content"
+                    id="summaryContent"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- Action Items -->
+
+            <div class="content-card">
+
+                <div class="card-heading">
+
+                    <div class="card-icon green">
+                        ✓
+                    </div>
+
+                    <h3>
+                        Action Items
+                    </h3>
+
+                </div>
+
+                <div
+                    class="list-content"
+                    id="actionsContent"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- Decisions -->
+
+            <div class="content-card">
+
+                <div class="card-heading">
+
+                    <div class="card-icon orange">
+                        ◆
+                    </div>
+
+                    <h3>
+                        Key Decisions
+                    </h3>
+
+                </div>
+
+                <div
+                    class="list-content"
+                    id="decisionsContent"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- Questions -->
+
+            <div class="content-card">
+
+                <div class="card-heading">
+
+                    <div class="card-icon blue">
+                        ?
+                    </div>
+
+                    <h3>
+                        Open Questions
+                    </h3>
+
+                </div>
+
+                <div
+                    class="list-content"
+                    id="questionsContent"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="quick-actions">
+
+            <button
+                class="secondary-btn"
+                onclick="showPage('transcript')"
+            >
+                View Full Transcript
+            </button>
+
+            <button
+                class="primary-btn"
+                onclick="showPage('chat')"
+            >
+                Ask Questions →
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         TRANSCRIPT
+    ====================================== -->
+
+    <section
+        class="page"
+        id="transcriptPage"
+    >
+
+        <div class="page-heading">
+
+            <div>
+
+                <span class="eyebrow">
+                    SOURCE CONTENT
+                </span>
+
+                <h1>
+                    Full Transcript
+                </h1>
+
+            </div>
+
+            <button
+                class="secondary-btn"
+                id="copyTranscript"
+            >
+                Copy Transcript
+            </button>
+
+        </div>
+
+
+        <div class="transcript-card">
+
+            <div
+                id="transcriptContent"
+                class="transcript"
+            >
+                No transcript available.
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         CHAT
+    ====================================== -->
+
+    <section
+        class="page"
+        id="chatPage"
+    >
+
+        <div class="chat-container">
+
+
+            <div class="chat-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        RAG ASSISTANT
+                    </span>
+
+                    <h1>
+                        Chat with your video
+                    </h1>
+
+                    <p>
+                        Ask questions and get answers grounded
+                        in the meeting transcript.
+                    </p>
+
+                </div>
+
+                <div class="rag-badge">
+                    ● RAG Active
+                </div>
+
+            </div>
+
+
+            <div
+                class="chat-messages"
+                id="chatMessages"
+            >
+
+                <div class="message assistant">
+
+                    <div class="avatar">
+                        ✦
+                    </div>
+
+                    <div class="message-content">
+
+                        <div class="message-name">
+                            MeetMind
+                        </div>
+
+                        <div class="bubble">
+                            Ask me anything about this video.
+                            I'll search the transcript and answer
+                            using the relevant context.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="suggestions">
+
+                <button data-question="What are the main topics discussed?">
+                    Main topics
+                </button>
+
+                <button data-question="What decisions were made?">
+                    Decisions
+                </button>
+
+                <button data-question="What are the action items?">
+                    Action items
+                </button>
+
+                <button data-question="What questions are still unresolved?">
+                    Open questions
+                </button>
+
+            </div>
+
+
+            <div class="chat-input-container">
+
+                <textarea
+                    id="chatInput"
+                    placeholder="Ask anything about the video..."
+                    rows="1"
+                ></textarea>
+
+                <button
+                    id="sendBtn"
+                    class="send-btn"
+                >
+                    ↑
+                </button>
+
+            </div>
+
+            <div class="chat-disclaimer">
+                Answers are generated using retrieved transcript context.
+            </div>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+<div
+    class="toast"
+    id="toast"
+>
+    <span id="toastMessage">
+        Done
+    </span>
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='app.js') }}"
+></script>
+
+</body>
+
+</html>
