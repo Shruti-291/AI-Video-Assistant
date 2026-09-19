@@ -5,7 +5,7 @@
 yt-dlp                  # Download audio from YouTube URLs
 pydub                    # Audio file manipulation / format conversion
 ffmpeg-python             # FFmpeg bindings (FFmpeg binary must be installed separately)
-
+imageio-ffmpeg
 # ── Speech-to-Text (local Whisper) ────────────────────────────────────────────
 openai-whisper          # OpenAI Whisper (runs locally)
 torch                      # PyTorch backend for Whisper
