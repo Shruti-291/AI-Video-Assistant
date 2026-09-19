@@ -298,7 +298,9 @@ def run_pipeline(
         "open_questions": questions
     }
 
+from a2wsgi import WSGIMiddleware
 
+asgi_app = WSGIMiddleware(app)
 # --------------------------------------------------
 # Run server
 # --------------------------------------------------

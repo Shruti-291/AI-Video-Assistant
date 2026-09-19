@@ -41,4 +41,5 @@ requests
 
 flask 
 flask-cors
-gunicorn
+uvicorn
+a2wsgi
