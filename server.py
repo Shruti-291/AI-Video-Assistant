@@ -7,15 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from utils.audio_processor import process_input
-from core.transcriber import transcribe_all
-from core.summarize import summarize, generate_title
-from core.extractor import (
-    extract_action_items,
-    extract_key_decisions,
-    extract_questions
-)
-from core.rag_engine import build_rag_chain, ask_question
 
 
 app = Flask(__name__)
@@ -167,7 +158,7 @@ def analyze_upload():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-
+    from core.rag_engine import ask_question
     if _session["rag_chain"] is None:
 
         return jsonify({
@@ -215,6 +206,15 @@ def run_pipeline(
     source: str,
     language: str = "english"
 ):
+    from utils.audio_processor import process_input
+    from core.transcriber import transcribe_all
+    from core.summarize import summarize, generate_title
+    from core.extractor import (
+        extract_action_items,
+        extract_key_decisions,
+        extract_questions
+    )
+    from core.rag_engine import build_rag_chain
 
     print("\n" + "=" * 60)
     print("STARTING AI VIDEO ASSISTANT")
