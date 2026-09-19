@@ -1,5 +1,7 @@
 import os
 import tempfile
+import threading
+import uuid
 
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
@@ -8,14 +10,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
 app = Flask(__name__)
 
 CORS(app)
 
 
 # --------------------------------------------------
-# In-memory session
+# In-memory session (stores the analyzed video for chat)
 # --------------------------------------------------
 
 _session = {
@@ -23,6 +24,68 @@ _session = {
     "transcript": "",
     "title": ""
 }
+
+
+# --------------------------------------------------
+# Background jobs (NEW)
+# Each analysis runs in its own thread. The browser
+# gets a job_id immediately and polls /status/<job_id>
+# until the job is done.
+# --------------------------------------------------
+
+_jobs = {}
+
+
+def _run_job(job_id, source, language, cleanup_path=None):
+
+    try:
+
+        result = run_pipeline(
+            source,
+            language
+        )
+
+        _jobs[job_id] = {
+            "status": "done",
+            "result": result
+        }
+
+    except Exception as e:
+
+        print("ERROR:", e)
+
+        _jobs[job_id] = {
+            "status": "error",
+            "error": str(e)
+        }
+
+    finally:
+
+        # Delete the uploaded temp file only AFTER processing ends
+        if cleanup_path:
+
+            try:
+                os.unlink(cleanup_path)
+
+            except OSError:
+                pass
+
+
+def _start_job(source, language, cleanup_path=None):
+
+    job_id = uuid.uuid4().hex
+
+    _jobs[job_id] = {
+        "status": "running"
+    }
+
+    threading.Thread(
+        target=_run_job,
+        args=(job_id, source, language, cleanup_path),
+        daemon=True
+    ).start()
+
+    return job_id
 
 
 # --------------------------------------------------
@@ -48,7 +111,7 @@ def health():
 
 
 # --------------------------------------------------
-# Analyze YouTube URL
+# Analyze YouTube URL (CHANGED: starts a job)
 # --------------------------------------------------
 
 @app.route("/analyze", methods=["POST"])
@@ -65,26 +128,18 @@ def analyze():
             "error": "No source provided"
         }), 400
 
-    try:
+    job_id = _start_job(
+        source,
+        language
+    )
 
-        result = run_pipeline(
-            source,
-            language
-        )
-
-        return jsonify(result)
-
-    except Exception as e:
-
-        print("ERROR:", e)
-
-        return jsonify({
-            "error": str(e)
-        }), 500
+    return jsonify({
+        "job_id": job_id
+    }), 202
 
 
 # --------------------------------------------------
-# Analyze uploaded file
+# Analyze uploaded file (CHANGED: starts a job)
 # --------------------------------------------------
 
 @app.route("/analyze/upload", methods=["POST"])
@@ -114,42 +169,40 @@ def analyze_upload():
         or ".mp4"
     )
 
-    tmp_path = None
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=suffix
+    ) as tmp:
 
-    try:
+        file.save(tmp.name)
+        tmp_path = tmp.name
 
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=suffix
-        ) as tmp:
+    # tmp_path is passed twice: once as the source to process,
+    # once as the file to delete when the job finishes
+    job_id = _start_job(
+        tmp_path,
+        language,
+        tmp_path
+    )
 
-            file.save(tmp.name)
-            tmp_path = tmp.name
+    return jsonify({
+        "job_id": job_id
+    }), 202
 
-        result = run_pipeline(
-            tmp_path,
-            language
+
+# --------------------------------------------------
+# Job status (NEW: the browser polls this)
+# --------------------------------------------------
+
+@app.route("/status/<job_id>", methods=["GET"])
+def status(job_id):
+
+    return jsonify(
+        _jobs.get(
+            job_id,
+            {"status": "not_found"}
         )
-
-        return jsonify(result)
-
-    except Exception as e:
-
-        print("ERROR:", e)
-
-        return jsonify({
-            "error": str(e)
-        }), 500
-
-    finally:
-
-        if tmp_path:
-
-            try:
-                os.unlink(tmp_path)
-
-            except OSError:
-                pass
+    )
 
 
 # --------------------------------------------------
@@ -199,7 +252,7 @@ def chat():
 
 
 # --------------------------------------------------
-# Main AI pipeline
+# Main AI pipeline (unchanged)
 # --------------------------------------------------
 
 def run_pipeline(
@@ -298,11 +351,18 @@ def run_pipeline(
         "open_questions": questions
     }
 
+
+# --------------------------------------------------
+# ASGI adapter (for uvicorn on Render)
+# --------------------------------------------------
+
 from a2wsgi import WSGIMiddleware
 
 asgi_app = WSGIMiddleware(app)
+
+
 # --------------------------------------------------
-# Run server
+# Run server (local only: python server.py)
 # --------------------------------------------------
 
 if __name__ == "__main__":
@@ -321,7 +381,7 @@ if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        debug=True,
+        debug=False,
         use_reloader=False,
         port=port
     )

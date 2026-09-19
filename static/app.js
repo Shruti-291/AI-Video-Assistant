@@ -135,7 +135,50 @@ document
 
     });
 
+/* =========================================
+   POLL JOB STATUS
+========================================= */
 
+async function pollJob(jobId) {
+
+    while (true) {
+
+        await new Promise(
+            resolve => setTimeout(resolve, 3000)
+        );
+
+        let job;
+
+        try {
+
+            const res =
+                await fetch(`/status/${jobId}`);
+
+            job = await res.json();
+
+        } catch {
+
+            continue; // temporary network problem, keep polling
+
+        }
+
+        if (job.status === "done") {
+            return job.result;
+        }
+
+        if (job.status === "error") {
+            throw new Error(job.error);
+        }
+
+        if (job.status === "not_found") {
+            throw new Error(
+                "Server restarted during analysis (likely out of memory)."
+            );
+        }
+
+    }
+
+}
 /* =========================================
    FILE UPLOAD
 ========================================= */
@@ -376,23 +419,41 @@ async function analyzeVideo() {
         }
 
 
-        const data =
+        // const data =
+        //     await response.json();
+
+
+        // if (!response.ok) {
+
+        //     throw new Error(
+        //         data.error ||
+        //         "Analysis failed."
+        //     );
+
+        // }
+
+
+        // sessionData = data;
+
+        const started =
             await response.json();
 
 
         if (!response.ok) {
 
             throw new Error(
-                data.error ||
+                started.error ||
                 "Analysis failed."
             );
 
         }
 
 
+        const data =
+            await pollJob(started.job_id);
+
+
         sessionData = data;
-
-
         displayResults(data);
 
 
